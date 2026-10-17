@@ -166,4 +166,31 @@ final class AppStatsTests: XCTestCase {
         XCTAssertEqual(stats.keyPresses, 2)
         XCTAssertTrue(stats.keyPressCounts.isEmpty)
     }
+
+    func testLegacyAppStartsShowingNewDistributionWithoutInventingEarlierKeys() throws {
+        let json = Data("""
+        {"bundleId":"com.test.app","displayName":"Test","keyPresses":152}
+        """.utf8)
+        var stats = try JSONDecoder().decode(AppStats.self, from: json)
+        XCTAssertEqual(stats.keyPressesWithDistribution, 0)
+
+        stats.recordKeyPress(keyName: "LeftCmd+C")
+        stats.recordKeyPress(keyName: "A")
+
+        let saved = try JSONEncoder().encode(stats)
+        let restored = try JSONDecoder().decode(AppStats.self, from: saved)
+        XCTAssertEqual(restored.keyPresses, 154)
+        XCTAssertEqual(restored.keyPressesWithDistribution, 2)
+        XCTAssertEqual(keyboardHeatmapCounts(from: restored.keyPressCounts), [
+            "LeftCmd": 1, "C": 1, "A": 1
+        ])
+        // A second app must never inherit this app's distribution.
+        XCTAssertTrue(AppStats(bundleId: "com.test.other", displayName: "Other").keyPressCounts.isEmpty)
+    }
+
+    func testDistributionCoverageIgnoresNegativeCountsAndSaturates() {
+        var stats = AppStats(bundleId: "com.test.app", displayName: "Test")
+        stats.keyPressCounts = ["A": Int.max, "B": 1, "C": -4]
+        XCTAssertEqual(stats.keyPressesWithDistribution, Int.max)
+    }
 }

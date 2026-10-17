@@ -71,6 +71,11 @@ struct AppStats: Codable {
         return leftClicks + rightClicks + sideBackClicks + sideForwardClicks
     }
 
+    /// Number of key-down events with a saved distribution, before expanding modifiers.
+    var keyPressesWithDistribution: Int {
+        saturatingNonnegativeSum(Array(keyPressCounts.values))
+    }
+
     var hasActivity: Bool {
         return keyPresses > 0 ||
             leftClicks > 0 ||

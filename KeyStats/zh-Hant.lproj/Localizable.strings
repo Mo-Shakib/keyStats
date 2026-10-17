@@ -230,6 +230,9 @@
 "keyboardHeatmap.allApps" = "所有 App";
 "keyboardHeatmap.appOption" = "%@ · %@ 次按鍵";
 "keyboardHeatmap.noAppData" = "此 App 暫無按鍵分佈資料";
+"keyboardHeatmap.appPartialSummary" = "總計 %@ 次按鍵 · %@ 次有分布記錄 · %@ 個活躍鍵";
+"keyboardHeatmap.noAppDataDetail" = "較早的 App 統計只儲存了按鍵總數，無法還原分布。更新後新記錄的按鍵會顯示在這裡。";
+"keyboardHeatmap.appStatsDisabledDetail" = "App 統計已關閉。請在設定中開啟，以記錄新按鍵的分布；較早的按鍵總數無法還原分布。";
 "keyboardHeatmap.summary" = "總計 %@ 次按鍵 · %@ 個活躍鍵";
 
 "allTimeStats.heatmap" = "活動熱力圖";

@@ -371,10 +371,22 @@ final class KeyboardHeatmapViewController: NSViewController {
         let activeKeys = visibleCounts.values.filter { $0 > 0 }.count
         let activeFormatted = numberFormatter.string(from: NSNumber(value: activeKeys)) ?? "\(activeKeys)"
         summaryLabel.stringValue = String(format: NSLocalizedString("keyboardHeatmap.summary", comment: ""), totalFormatted, activeFormatted)
+        if let selectedApp, selectedApp.keyPressesWithDistribution < max(0, selectedApp.keyPresses) {
+            let recorded = selectedApp.keyPressesWithDistribution
+            let recordedFormatted = numberFormatter.string(from: NSNumber(value: recorded)) ?? "\(recorded)"
+            summaryLabel.stringValue = String(
+                format: NSLocalizedString("keyboardHeatmap.appPartialSummary", comment: ""),
+                totalFormatted, recordedFormatted, activeFormatted
+            )
+        }
 
         let hasActivity = visibleCounts.values.contains { $0 > 0 }
         emptyStateBadgeView.text = NSLocalizedString(
             selectedApp == nil ? "keyboardHeatmap.noData" : "keyboardHeatmap.noAppData",
+            comment: ""
+        )
+        emptyStateBadgeView.detail = selectedApp == nil ? nil : NSLocalizedString(
+            statsManager.appStatsEnabled ? "keyboardHeatmap.noAppDataDetail" : "keyboardHeatmap.appStatsDisabledDetail",
             comment: ""
         )
         updateDatePickerButtonTitle(displayDateString(for: selectedDate))
@@ -638,11 +650,19 @@ final class KeyboardHeatmapViewController: NSViewController {
 private final class EmptyStateBadgeView: NSVisualEffectView {
     private let iconView: NSImageView
     private let messageLabel: NSTextField
+    private let detailLabel = NSTextField(wrappingLabelWithString: "")
     private let borderLayer = CAShapeLayer()
 
     var text: String {
         get { messageLabel.stringValue }
         set { messageLabel.stringValue = newValue }
+    }
+
+    var detail: String? {
+        didSet {
+            detailLabel.stringValue = detail ?? ""
+            detailLabel.isHidden = detail == nil
+        }
     }
 
     init(text: String) {
@@ -673,9 +693,19 @@ private final class EmptyStateBadgeView: NSVisualEffectView {
         layer?.addSublayer(borderLayer)
         translatesAutoresizingMaskIntoConstraints = false
 
-        let stack = NSStackView(views: [iconView, messageLabel])
-        stack.orientation = .horizontal
-        stack.alignment = .centerY
+        let heading = NSStackView(views: [iconView, messageLabel])
+        heading.orientation = .horizontal
+        heading.alignment = .centerY
+        heading.spacing = 8
+
+        detailLabel.font = NSFont.systemFont(ofSize: 12)
+        detailLabel.textColor = .secondaryLabelColor
+        detailLabel.alignment = .center
+        detailLabel.isHidden = true
+
+        let stack = NSStackView(views: [heading, detailLabel])
+        stack.orientation = .vertical
+        stack.alignment = .centerX
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
@@ -685,6 +715,7 @@ private final class EmptyStateBadgeView: NSVisualEffectView {
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            detailLabel.widthAnchor.constraint(equalToConstant: 340),
             iconView.widthAnchor.constraint(equalToConstant: 16),
             iconView.heightAnchor.constraint(equalToConstant: 16)
         ])
@@ -729,6 +760,7 @@ private final class EmptyStateBadgeView: NSVisualEffectView {
         layer?.shadowOpacity = 0
         iconView.contentTintColor = textColor
         messageLabel.textColor = textColor
+        detailLabel.textColor = textColor.withAlphaComponent(0.75)
     }
 }
 

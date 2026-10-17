@@ -230,6 +230,9 @@
 "keyboardHeatmap.allApps" = "All Apps";
 "keyboardHeatmap.appOption" = "%@ · %@ keys";
 "keyboardHeatmap.noAppData" = "No key distribution for this app yet";
+"keyboardHeatmap.appPartialSummary" = "Total %@ keys · %@ with distribution · %@ active keys";
+"keyboardHeatmap.noAppDataDetail" = "Earlier app statistics saved totals only; their key distribution cannot be recovered. New key presses recorded after this update will appear here.";
+"keyboardHeatmap.appStatsDisabledDetail" = "App statistics are disabled. Enable them in Settings to record new key distribution data. Earlier totals cannot be used to recover the distribution.";
 "keyboardHeatmap.summary" = "Total %@ keys · %@ active keys";
 
 "allTimeStats.heatmap" = "Activity Heatmap";
