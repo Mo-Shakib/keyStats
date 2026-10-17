@@ -169,7 +169,31 @@
                       DropDownClosed="AppFilterComboBox_DropDownClosed">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <Image x:Name="AppIcon" Source="{Binding Icon}" Stretch="Uniform"/>
+                                <TextBlock x:Name="FallbackAppIcon"
+                                           Text="&#xE71D;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="14"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="Collapsed"/>
+                            </Grid>
+                            <TextBlock Grid.Column="1" Text="{Binding Label}"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding HasIcon}" Value="False">
+                                <Setter TargetName="AppIcon" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="FallbackAppIcon" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>

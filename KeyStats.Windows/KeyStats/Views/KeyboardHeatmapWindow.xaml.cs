@@ -35,11 +35,14 @@ public partial class KeyboardHeatmapWindow : Window
     {
         public string? AppName { get; }
         public string Label { get; }
+        public ImageSource? Icon { get; }
+        public bool HasIcon => Icon != null;
 
-        public AppFilterOption(string? appName, string label)
+        public AppFilterOption(string? appName, string label, ImageSource? icon = null)
         {
             AppName = appName;
             Label = label;
+            Icon = icon;
         }
     }
 
@@ -177,7 +180,8 @@ public partial class KeyboardHeatmapWindow : Window
             app.AppName,
             string.Format(CultureInfo.CurrentCulture, KeyStats.Properties.Strings.Heatmap_AppOptionFormat,
                 string.IsNullOrWhiteSpace(app.DisplayName) ? app.AppName : app.DisplayName,
-                app.KeyPresses.ToString("N0", CultureInfo.CurrentCulture)))));
+                app.KeyPresses.ToString("N0", CultureInfo.CurrentCulture)),
+            AppIconHelper.GetAppIcon(app.AppName, app.DisplayName))));
 
         _suppressAppSelection = true;
         try
