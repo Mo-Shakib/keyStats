@@ -28,6 +28,20 @@ public partial class KeyboardHeatmapWindow : Window
     private bool _pendingRefresh;
     private bool _isTransitionAnimating;
     private bool _suppressCalendarSelection;
+    private bool _suppressAppSelection;
+    private string? _selectedAppName;
+
+    private sealed class AppFilterOption
+    {
+        public string? AppName { get; }
+        public string Label { get; }
+
+        public AppFilterOption(string? appName, string label)
+        {
+            AppName = appName;
+            Label = label;
+        }
+    }
 
     public KeyboardHeatmapWindow()
     {
@@ -83,7 +97,7 @@ public partial class KeyboardHeatmapWindow : Window
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 _pendingRefresh = false;
-                if (!_isTransitionAnimating)
+                if (!_isTransitionAnimating && !AppFilterComboBox.IsDropDownOpen)
                 {
                     RefreshData();
                 }
@@ -128,7 +142,9 @@ public partial class KeyboardHeatmapWindow : Window
         _endDate = bounds.End.Date;
         _selectedDate = ClampDate(_selectedDate);
 
-        var dayData = manager.GetKeyboardHeatmapDay(_selectedDate);
+        var dayData = manager.GetKeyboardHeatmapDay(_selectedDate, _selectedAppName);
+        _selectedAppName = dayData.SelectedAppName;
+        UpdateAppFilter(dayData);
         var visibleCounts = dayData.KeyCounts
             .Where(kvp => KeyboardHeatmapControl.SupportedKeyIds.Contains(kvp.Key))
             .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.Ordinal);
@@ -140,12 +156,57 @@ public partial class KeyboardHeatmapWindow : Window
         SummaryText.Text = string.Format(CultureInfo.CurrentCulture, KeyStats.Properties.Strings.Heatmap_SummaryFormat, totalFormatted, activeFormatted);
         DateText.Text = DisplayDateString(_selectedDate);
 
-        var hasActivity = dayData.TotalKeyPresses > 0;
+        var hasActivity = visibleCounts.Values.Any(value => value > 0);
+        EmptyBadgeText.Text = _selectedAppName == null
+            ? KeyStats.Properties.Strings.Heatmap_NoData
+            : KeyStats.Properties.Strings.Heatmap_NoAppData;
         EmptyOverlay.Visibility = hasActivity ? Visibility.Collapsed : Visibility.Visible;
         EmptyBadge.Visibility = hasActivity ? Visibility.Collapsed : Visibility.Visible;
 
         UpdateNavigationState();
         UpdateDatePickerState();
+    }
+
+    private void UpdateAppFilter(StatsManager.KeyboardHeatmapDay dayData)
+    {
+        var options = new List<AppFilterOption>
+        {
+            new(null, KeyStats.Properties.Strings.Heatmap_AllApps)
+        };
+        options.AddRange(dayData.Apps.Select(app => new AppFilterOption(
+            app.AppName,
+            string.Format(CultureInfo.CurrentCulture, KeyStats.Properties.Strings.Heatmap_AppOptionFormat,
+                string.IsNullOrWhiteSpace(app.DisplayName) ? app.AppName : app.DisplayName,
+                app.KeyPresses.ToString("N0", CultureInfo.CurrentCulture)))));
+
+        _suppressAppSelection = true;
+        try
+        {
+            AppFilterComboBox.ItemsSource = options;
+            AppFilterComboBox.SelectedItem = options.First(option =>
+                string.Equals(option.AppName, _selectedAppName, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            _suppressAppSelection = false;
+        }
+    }
+
+    private void AppFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressAppSelection || AppFilterComboBox.SelectedItem is not AppFilterOption option) return;
+
+        _selectedAppName = option.AppName;
+        App.CurrentApp?.TrackClick("keyboard_heatmap_app_filter", new Dictionary<string, object?>
+        {
+            ["scope"] = _selectedAppName == null ? "all" : "app"
+        });
+        RefreshData();
+    }
+
+    private void AppFilterComboBox_DropDownClosed(object? sender, EventArgs e)
+    {
+        if (!_suppressAppSelection) RefreshData();
     }
 
     private string DisplayDateString(DateTime date)
