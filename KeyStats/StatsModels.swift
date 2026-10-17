@@ -64,7 +64,7 @@ private func canonicalBreakdownKeyPart(_ rawKeyPart: String) -> String {
     }
 }
 
-private func canonicalBreakdownKeyName(_ keyName: String) -> String {
+func canonicalBreakdownKeyName(_ keyName: String) -> String {
     let trimmed = keyName.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmed == "+" {
         return "+"
@@ -596,6 +596,20 @@ struct DailyStats: Codable {
 
     var totalClicks: Int {
         saturatingNonnegativeSum([leftClicks, rightClicks, middleClicks, sideBackClicks, sideForwardClicks])
+    }
+
+    /// Apps with keyboard activity, ordered by daily key presses with stable tie breakers.
+    var keyboardHeatmapApps: [AppStats] {
+        appStats.values.filter { $0.keyPresses > 0 || !$0.keyPressCounts.isEmpty }.sorted {
+            if $0.keyPresses != $1.keyPresses {
+                return $0.keyPresses > $1.keyPresses
+            }
+            let nameOrder = $0.displayName.localizedCaseInsensitiveCompare($1.displayName)
+            if nameOrder != .orderedSame {
+                return nameOrder == .orderedAscending
+            }
+            return $0.bundleId < $1.bundleId
+        }
     }
 
     var hasAnyActivity: Bool {

@@ -226,6 +226,10 @@
 "keyboardHeatmap.nextDay" = "Next Day";
 "keyboardHeatmap.backToToday" = "Today";
 "keyboardHeatmap.noData" = "No keyboard activity for this day";
+"keyboardHeatmap.appFilter" = "Filter by app";
+"keyboardHeatmap.allApps" = "All Apps";
+"keyboardHeatmap.appOption" = "%@ · %@ keys";
+"keyboardHeatmap.noAppData" = "No key distribution for this app yet";
 "keyboardHeatmap.summary" = "Total %@ keys · %@ active keys";
 
 "allTimeStats.heatmap" = "Activity Heatmap";

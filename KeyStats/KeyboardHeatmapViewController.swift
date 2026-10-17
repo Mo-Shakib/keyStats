@@ -51,6 +51,7 @@ final class KeyboardHeatmapViewController: NSViewController {
 
     private var titleLabel: NSTextField!
     private var subtitleLabel: NSTextField!
+    private var appFilterPopUp: NSPopUpButton!
     private var previousDayButton: NSButton!
     private var nextDayButton: NSButton!
     private var backToTodayButton: NSButton!
@@ -62,6 +63,7 @@ final class KeyboardHeatmapViewController: NSViewController {
     private var emptyStateBadgeView: EmptyStateBadgeView!
 
     private var selectedDate = Calendar.current.startOfDay(for: Date())
+    private var selectedAppBundleId: String?
     private var dateBounds: (start: Date, end: Date) = {
         let today = Calendar.current.startOfDay(for: Date())
         return (today, today)
@@ -173,8 +175,26 @@ final class KeyboardHeatmapViewController: NSViewController {
         headerStack.alignment = .leading
         headerStack.spacing = 6
         headerStack.translatesAutoresizingMaskIntoConstraints = false
-        containerStack.addArrangedSubview(headerStack)
-        headerStack.widthAnchor.constraint(equalTo: containerStack.widthAnchor).isActive = true
+
+        appFilterPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
+        appFilterPopUp.translatesAutoresizingMaskIntoConstraints = false
+        appFilterPopUp.bezelStyle = .rounded
+        appFilterPopUp.target = self
+        appFilterPopUp.action = #selector(appFilterChanged)
+        appFilterPopUp.setAccessibilityLabel(NSLocalizedString("keyboardHeatmap.appFilter", comment: ""))
+        appFilterPopUp.toolTip = NSLocalizedString("keyboardHeatmap.appFilter", comment: "")
+        appFilterPopUp.widthAnchor.constraint(equalToConstant: 240).isActive = true
+        appFilterPopUp.cell?.lineBreakMode = .byTruncatingTail
+
+        let headerSpacer = NSView()
+        headerSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let headerRow = NSStackView(views: [headerStack, headerSpacer, appFilterPopUp])
+        headerRow.orientation = .horizontal
+        headerRow.alignment = .centerY
+        headerRow.spacing = 16
+        headerRow.translatesAutoresizingMaskIntoConstraints = false
+        containerStack.addArrangedSubview(headerRow)
+        headerRow.widthAnchor.constraint(equalTo: containerStack.widthAnchor).isActive = true
 
         previousDayButton = makeIconControlButton(
             systemName: "chevron.left",
@@ -339,22 +359,64 @@ final class KeyboardHeatmapViewController: NSViewController {
         selectedDate = clampedDate(selectedDate)
 
         let dayData = statsManager.keyboardHeatmapDay(for: selectedDate)
-        let visibleCounts = dayData.keyCounts.filter { KeyboardHeatmapView.supportedKeyIDs.contains($0.key) }
+        updateAppFilter(with: dayData.apps)
+        let selectedApp = dayData.apps.first { $0.bundleId == selectedAppBundleId }
+        let keyCounts = selectedApp.map { keyboardHeatmapCounts(from: $0.keyPressCounts) } ?? dayData.keyCounts
+        let totalKeyPresses = selectedApp?.keyPresses ?? dayData.totalKeyPresses
+        let visibleCounts = keyCounts.filter { KeyboardHeatmapView.supportedKeyIDs.contains($0.key) }
 
         keyboardHeatmapView.apply(keyCounts: visibleCounts)
 
-        let totalFormatted = numberFormatter.string(from: NSNumber(value: dayData.totalKeyPresses)) ?? "\(dayData.totalKeyPresses)"
+        let totalFormatted = numberFormatter.string(from: NSNumber(value: totalKeyPresses)) ?? "\(totalKeyPresses)"
         let activeKeys = visibleCounts.values.filter { $0 > 0 }.count
         let activeFormatted = numberFormatter.string(from: NSNumber(value: activeKeys)) ?? "\(activeKeys)"
         summaryLabel.stringValue = String(format: NSLocalizedString("keyboardHeatmap.summary", comment: ""), totalFormatted, activeFormatted)
 
-        let hasActivity = dayData.totalKeyPresses > 0
+        let hasActivity = visibleCounts.values.contains { $0 > 0 }
+        emptyStateBadgeView.text = NSLocalizedString(
+            selectedApp == nil ? "keyboardHeatmap.noData" : "keyboardHeatmap.noAppData",
+            comment: ""
+        )
         updateDatePickerButtonTitle(displayDateString(for: selectedDate))
         emptyStateBadgeView.isHidden = hasActivity
         keyboardEmptyOverlayView.isHidden = hasActivity
         keyboardHeatmapView.alphaValue = 1
         updateDateNavigationState()
         syncDatePickerState()
+    }
+
+    private func updateAppFilter(with apps: [AppStats]) {
+        if let bundleId = selectedAppBundleId, !apps.contains(where: { $0.bundleId == bundleId }) {
+            selectedAppBundleId = nil
+        }
+
+        appFilterPopUp.removeAllItems()
+        appFilterPopUp.menu?.addItem(NSMenuItem(
+            title: NSLocalizedString("keyboardHeatmap.allApps", comment: ""),
+            action: nil,
+            keyEquivalent: ""
+        ))
+        for app in apps {
+            let name = app.displayName.isEmpty ? app.bundleId : app.displayName
+            let count = numberFormatter.string(from: NSNumber(value: app.keyPresses)) ?? "\(app.keyPresses)"
+            let item = NSMenuItem(
+                title: String(format: NSLocalizedString("keyboardHeatmap.appOption", comment: ""), name, count),
+                action: nil,
+                keyEquivalent: ""
+            )
+            item.representedObject = app.bundleId
+            appFilterPopUp.menu?.addItem(item)
+        }
+        let selectedIndex = apps.firstIndex { $0.bundleId == selectedAppBundleId }.map { $0 + 1 } ?? 0
+        appFilterPopUp.selectItem(at: selectedIndex)
+    }
+
+    @objc private func appFilterChanged() {
+        selectedAppBundleId = appFilterPopUp.selectedItem?.representedObject as? String
+        AppDelegate.trackClick("keyboard_heatmap_app_filter", properties: [
+            "scope": selectedAppBundleId == nil ? "all" : "app"
+        ])
+        refreshData()
     }
 
     private func displayDateString(for date: Date) -> String {
@@ -577,6 +639,11 @@ private final class EmptyStateBadgeView: NSVisualEffectView {
     private let iconView: NSImageView
     private let messageLabel: NSTextField
     private let borderLayer = CAShapeLayer()
+
+    var text: String {
+        get { messageLabel.stringValue }
+        set { messageLabel.stringValue = newValue }
+    }
 
     init(text: String) {
         let iconImage = NSImage(

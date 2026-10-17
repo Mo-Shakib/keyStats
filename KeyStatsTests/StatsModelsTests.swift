@@ -53,6 +53,28 @@ final class StatsModelsTests: XCTestCase {
         XCTAssertTrue(stats.hasAnyActivity)
     }
 
+    func testKeyboardHeatmapAppsSortByKeyPressesWithStableTiesAndExcludeMouseOnlyApps() {
+        var day = DailyStats(date: Date())
+        var busiest = AppStats(bundleId: "com.test.busy", displayName: "Busy")
+        busiest.keyPresses = 100
+        var alpha = AppStats(bundleId: "com.test.alpha", displayName: "Alpha")
+        alpha.keyPresses = 20
+        var beta = AppStats(bundleId: "com.test.beta", displayName: "Beta")
+        beta.keyPresses = 20
+        var duplicateName = AppStats(bundleId: "com.test.beta2", displayName: "Beta")
+        duplicateName.keyPresses = 20
+        var mouseOnly = AppStats(bundleId: "com.test.mouse", displayName: "Mouse")
+        mouseOnly.leftClicks = 1_000
+        for app in [beta, mouseOnly, duplicateName, busiest, alpha] {
+            day.appStats[app.bundleId] = app
+        }
+
+        XCTAssertEqual(day.keyboardHeatmapApps.map(\.bundleId), [
+            busiest.bundleId, alpha.bundleId, beta.bundleId, duplicateName.bundleId
+        ])
+        XCTAssertTrue(DailyStats(date: Date()).keyboardHeatmapApps.isEmpty)
+    }
+
     func testDailyStatsCodableBackfillsLegacyOtherClicks() throws {
         let json = """
         {

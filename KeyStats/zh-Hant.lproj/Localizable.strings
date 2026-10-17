@@ -226,6 +226,10 @@
 "keyboardHeatmap.nextDay" = "下一天";
 "keyboardHeatmap.backToToday" = "回到今天";
 "keyboardHeatmap.noData" = "當天暫無鍵盤活動";
+"keyboardHeatmap.appFilter" = "依 App 篩選";
+"keyboardHeatmap.allApps" = "所有 App";
+"keyboardHeatmap.appOption" = "%@ · %@ 次按鍵";
+"keyboardHeatmap.noAppData" = "此 App 暫無按鍵分佈資料";
 "keyboardHeatmap.summary" = "總計 %@ 次按鍵 · %@ 個活躍鍵";
 
 "allTimeStats.heatmap" = "活動熱力圖";

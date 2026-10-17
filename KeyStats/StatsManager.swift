@@ -393,7 +393,7 @@ class StatsManager {
         }
         if let appIdentity = appIdentity {
             updateAppStatsLocked(for: appIdentity) { stats in
-                stats.recordKeyPress()
+                stats.recordKeyPress(keyName: keyName)
             }
         }
         statsStateLock.unlock()
@@ -1090,6 +1090,7 @@ class StatsManager {
             if var existing = merged[bundleId] {
                 existing.bundleId = bundleId
                 existing.keyPresses = safeAdd(existing.keyPresses, importedStats.keyPresses)
+                existing.keyPressCounts = mergedCounterMap(existing.keyPressCounts, importedStats.keyPressCounts)
                 existing.leftClicks = safeAdd(existing.leftClicks, importedStats.leftClicks)
                 existing.rightClicks = safeAdd(existing.rightClicks, importedStats.rightClicks)
                 existing.sideBackClicks = safeAdd(existing.sideBackClicks, importedStats.sideBackClicks)
@@ -1159,6 +1160,7 @@ class StatsManager {
             var stats = value
             stats.bundleId = resolvedBundleId
             stats.keyPresses = max(0, stats.keyPresses)
+            stats.keyPressCounts = normalizedKeyPressCounts(stats.keyPressCounts)
             stats.leftClicks = max(0, stats.leftClicks)
             stats.rightClicks = max(0, stats.rightClicks)
             stats.sideBackClicks = max(0, stats.sideBackClicks)
@@ -1396,6 +1398,7 @@ extension StatsManager {
         let date: Date
         let totalKeyPresses: Int
         let keyCounts: [String: Int]
+        let apps: [AppStats]
 
         var maxCount: Int {
             keyCounts.values.max() ?? 0
@@ -1460,7 +1463,8 @@ extension StatsManager {
         return KeyboardHeatmapDay(
             date: normalizedDate,
             totalKeyPresses: max(0, daily.keyPresses),
-            keyCounts: aggregated
+            keyCounts: aggregated,
+            apps: daily.keyboardHeatmapApps
         )
     }
     

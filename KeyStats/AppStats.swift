@@ -4,6 +4,7 @@ struct AppStats: Codable {
     var bundleId: String
     var displayName: String
     var keyPresses: Int
+    var keyPressCounts: [String: Int]
     var leftClicks: Int
     var rightClicks: Int
     var sideBackClicks: Int
@@ -14,6 +15,7 @@ struct AppStats: Codable {
         self.bundleId = bundleId
         self.displayName = displayName
         self.keyPresses = 0
+        self.keyPressCounts = [:]
         self.leftClicks = 0
         self.rightClicks = 0
         self.sideBackClicks = 0
@@ -25,6 +27,7 @@ struct AppStats: Codable {
         case bundleId
         case displayName
         case keyPresses
+        case keyPressCounts
         case leftClicks
         case rightClicks
         case sideBackClicks
@@ -39,6 +42,7 @@ struct AppStats: Codable {
         bundleId = try container.decodeIfPresent(String.self, forKey: .bundleId) ?? ""
         displayName = try container.decodeIfPresent(String.self, forKey: .displayName) ?? ""
         keyPresses = try container.decodeIfPresent(Int.self, forKey: .keyPresses) ?? 0
+        keyPressCounts = try container.decodeIfPresent([String: Int].self, forKey: .keyPressCounts) ?? [:]
         leftClicks = try container.decodeIfPresent(Int.self, forKey: .leftClicks) ?? 0
         rightClicks = try container.decodeIfPresent(Int.self, forKey: .rightClicks) ?? 0
         sideBackClicks = try container.decodeIfPresent(Int.self, forKey: .sideBackClicks) ?? 0
@@ -55,6 +59,7 @@ struct AppStats: Codable {
         try container.encode(bundleId, forKey: .bundleId)
         try container.encode(displayName, forKey: .displayName)
         try container.encode(keyPresses, forKey: .keyPresses)
+        try container.encode(keyPressCounts, forKey: .keyPressCounts)
         try container.encode(leftClicks, forKey: .leftClicks)
         try container.encode(rightClicks, forKey: .rightClicks)
         try container.encode(sideBackClicks, forKey: .sideBackClicks)
@@ -80,8 +85,12 @@ struct AppStats: Codable {
         displayName = name
     }
 
-    mutating func recordKeyPress() {
+    mutating func recordKeyPress(keyName: String? = nil) {
         keyPresses += 1
+        guard let keyName = keyName else { return }
+        let canonicalName = canonicalBreakdownKeyName(keyName)
+        guard !canonicalName.isEmpty else { return }
+        keyPressCounts[canonicalName, default: 0] += 1
     }
 
     mutating func recordLeftClick() {
