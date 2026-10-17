@@ -1,4 +1,5 @@
 import Cocoa
+import UniformTypeIdentifiers
 
 private func resolvedCGColor(_ color: NSColor, for view: NSView) -> CGColor {
     var resolved: CGColor = color.cgColor
@@ -64,6 +65,7 @@ final class KeyboardHeatmapViewController: NSViewController {
 
     private var selectedDate = Calendar.current.startOfDay(for: Date())
     private var selectedAppBundleId: String?
+    private var appIconCache: [String: NSImage] = [:]
     private var dateBounds: (start: Date, end: Date) = {
         let today = Calendar.current.startOfDay(for: Date())
         return (today, today)
@@ -403,11 +405,14 @@ final class KeyboardHeatmapViewController: NSViewController {
         }
 
         appFilterPopUp.removeAllItems()
-        appFilterPopUp.menu?.addItem(NSMenuItem(
+        let allAppsItem = NSMenuItem(
             title: NSLocalizedString("keyboardHeatmap.allApps", comment: ""),
             action: nil,
             keyEquivalent: ""
-        ))
+        )
+        allAppsItem.image = NSImage(systemSymbolName: "square.grid.2x2", accessibilityDescription: nil)
+        allAppsItem.image?.size = NSSize(width: 16, height: 16)
+        appFilterPopUp.menu?.addItem(allAppsItem)
         for app in apps {
             let name = app.displayName.isEmpty ? app.bundleId : app.displayName
             let count = numberFormatter.string(from: NSNumber(value: app.keyPresses)) ?? "\(app.keyPresses)"
@@ -417,10 +422,29 @@ final class KeyboardHeatmapViewController: NSViewController {
                 keyEquivalent: ""
             )
             item.representedObject = app.bundleId
+            item.image = appIcon(for: app.bundleId)
             appFilterPopUp.menu?.addItem(item)
         }
         let selectedIndex = apps.firstIndex { $0.bundleId == selectedAppBundleId }.map { $0 + 1 } ?? 0
         appFilterPopUp.selectItem(at: selectedIndex)
+    }
+
+    private func appIcon(for bundleId: String) -> NSImage {
+        if let cached = appIconCache[bundleId] {
+            return cached
+        }
+
+        let workspace = NSWorkspace.shared
+        let source: NSImage
+        if let url = workspace.urlForApplication(withBundleIdentifier: bundleId) {
+            source = workspace.icon(forFile: url.path)
+        } else {
+            source = workspace.icon(for: .applicationBundle)
+        }
+        let icon = (source.copy() as? NSImage) ?? source
+        icon.size = NSSize(width: 16, height: 16)
+        appIconCache[bundleId] = icon
+        return icon
     }
 
     @objc private func appFilterChanged() {
