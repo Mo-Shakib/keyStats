@@ -61,7 +61,7 @@ public class AppStats
     public void RecordKeyPress(string? keyName = null)
     {
         KeyPresses++;
-        if (string.IsNullOrWhiteSpace(keyName)) return;
+        if (keyName == null || string.IsNullOrWhiteSpace(keyName)) return;
 
         var key = keyName.Trim();
         KeyPressCounts[key] = KeyPressCounts.TryGetValue(key, out var count) ? count + 1 : 1;
