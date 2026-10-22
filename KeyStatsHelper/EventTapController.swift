@@ -92,8 +92,8 @@ final class EventTapController {
         }
 
         // A posted copy of a hardware event may pass this listen-only tap again.
-        // Suppress only a matching, near-immediate synthetic copy. A synthetic
-        // event without a matching hardware event remains countable.
+        // Require the original timestamp and flags, not just nearby arrival times.
+        // A newly generated synthetic event remains countable.
         let now = ProcessInfo.processInfo.systemUptime
         let sourcePID = event.getIntegerValueField(.eventSourceUnixProcessID)
         let detail: Int64
@@ -109,7 +109,8 @@ final class EventTapController {
             detail = 0
         }
         if eventDeduplicator.shouldDrop(type: type.rawValue, detail: detail,
-                                        sourcePID: sourcePID, time: now) {
+                                        sourcePID: sourcePID, eventTimestamp: event.timestamp,
+                                        flags: event.flags.rawValue, time: now) {
             return
         }
 
