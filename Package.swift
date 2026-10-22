@@ -31,7 +31,6 @@ let package = Package(
                 "AllTimeStatsWindowController.swift",
                 "MouseDistanceCalibrationWindowController.swift",
                 "SettingsViewController.swift",
-                "AppActivityTracker.swift",
                 "AppStatsWindowController.swift",
                 "AppDelegate.swift",
                 "MenuBarController.swift",
@@ -54,6 +53,7 @@ let package = Package(
             ],
             sources: [
                 "AppStats.swift",
+                "AppActivityTracker.swift",
                 "StatsModels.swift",
                 "HourlyStats.swift",
                 "UpdateCheckCoordinator.swift",
@@ -68,7 +68,18 @@ let package = Package(
             name: "KeyStatsCoreTests",
             dependencies: ["KeyStatsCore"],
             path: "KeyStatsTests",
-            sources: ["HourlyStatsTests.swift", "AppStatsTests.swift", "StatsModelsTests.swift", "UpdateCheckCoordinatorTests.swift", "SyncCoreTests.swift"]
+            sources: ["HourlyStatsTests.swift", "AppStatsTests.swift", "AppActivityTrackerTests.swift", "StatsModelsTests.swift", "UpdateCheckCoordinatorTests.swift", "SyncCoreTests.swift"]
+        ),
+        .target(
+            name: "KeyStatsHelperLogic",
+            path: "KeyStatsHelper",
+            sources: ["InputEventDeduplicator.swift"]
+        ),
+        .testTarget(
+            name: "KeyStatsHelperLogicTests",
+            dependencies: ["KeyStatsHelperLogic"],
+            path: "KeyStatsTests",
+            sources: ["InputEventDeduplicatorTests.swift"]
         )
     ]
 )
